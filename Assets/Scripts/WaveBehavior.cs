@@ -2,61 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-struct Vertex
-{
-    float xPos;
-    float yPos;
-    float velocity;
-    GameObject sphere;
-
-    public Vertex(float x, float y, float v)
-    {
-        xPos = x;
-        yPos = y;
-        velocity = v;
-        sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sphere.transform.position = new Vector3(xPos, yPos, 0);
-    }
-
-    public void updateSpherePosition()
-    {
-        sphere.transform.position = new Vector3(this.xPos, this.yPos, 0);
-    }
-
-    public void setVelocity(float v)
-    {
-        velocity = v;
-    }
-
-    public void setXPos(float x)
-    {
-        xPos = x;
-    }
-
-    public void setYPos(float y)
-    {
-        yPos = y;
-    }
-
-    public float getVelocity()
-    {
-        return velocity;
-    }
-
-    public float getXPos()
-    {
-        return xPos;
-    }
-
-    public float getYPos()
-    {
-        return yPos;
-    }
-}
-
 public class WaveBehavior : MonoBehaviour
 {
-    List<Vertex> waveVertices = new List<Vertex>();
+    List<GameObject> spheres = new List<GameObject>();
+    List<float> yPositions = new List<float>();
+    List<float> velocities = new List<float>();
     List<float> newHeights = new List<float>();
     public int numberVertices;
     public float time;
@@ -68,9 +18,9 @@ public class WaveBehavior : MonoBehaviour
     void Start()
     {
         numberVertices = 200;
-        timeStep = 0.5f;
+        timeStep = 0.05f;
         time = 0;
-        waveSpeed = 5;
+        waveSpeed = 1;
         clamp = 0.99f;
         spawnVertices();
     }
@@ -91,8 +41,11 @@ public class WaveBehavior : MonoBehaviour
     {
         for (int x = 0; x < numberVertices; x++)
         {
-            waveVertices.Add(new Vertex(x, Random.value*2 + 10, 0));
+            yPositions.Add(Random.value * 2 + 10);
+            velocities.Add(0);
             newHeights.Add(0);
+            spheres.Add(GameObject.CreatePrimitive(PrimitiveType.Sphere));
+            spheres[x].transform.position = new Vector3((float)x, yPositions[x], 0);
         }
     }
 
@@ -101,6 +54,7 @@ public class WaveBehavior : MonoBehaviour
         int leftIndex;
         int rightIndex;
         float f;
+        float newVelocity;
 
         for(int i = 0; i < numberVertices; i++)
         {
@@ -120,16 +74,16 @@ public class WaveBehavior : MonoBehaviour
                 rightIndex = i + 1;
             }
 
-            f = (waveSpeed * waveSpeed) * ((waveVertices[leftIndex].getYPos() + waveVertices[rightIndex].getYPos()) - (2 * waveVertices[i].getYPos()));
-            float velocity = waveVertices[i].getVelocity() + (f * timeStep);
-            waveVertices[i].setVelocity(velocity);
-            
-            newHeights[i] = waveVertices[i].getYPos() + (waveVertices[i].getVelocity() * timeStep);
+            f = (waveSpeed * waveSpeed) * ((yPositions[leftIndex] + yPositions[rightIndex]) - (2 * yPositions[i]));
+            newVelocity = velocities[i] + (f * timeStep);
+            velocities[i] = newVelocity;
+            newHeights[i] = yPositions[i] + (velocities[i] * timeStep);
+
             if (i.Equals(1))
             {
-                print("Velocity : " + velocity + "\n");
-                print("Velocity 2: " + waveVertices[i].getVelocity() + "\n");
-                print("Height : " + waveVertices[i].getYPos() + "\n");
+                print("Velocity : " + newVelocity + "\n");
+                print("Velocity 2: " + velocities[i] + "\n");
+                print("Height : " + yPositions[i] + "\n");
                 print("New Height: " + newHeights[i] + "\n");
                 print("F: " + f + "\n");
             }
@@ -137,8 +91,8 @@ public class WaveBehavior : MonoBehaviour
 
         for(int i = 0; i < numberVertices; i++)
         {
-            waveVertices[i].setYPos(newHeights[i]);
-            waveVertices[i].updateSpherePosition();
+            yPositions[i] = newHeights[i];
+            spheres[i].transform.position = new Vector3((float)i, yPositions[i], 0);
         }
     }
 }
