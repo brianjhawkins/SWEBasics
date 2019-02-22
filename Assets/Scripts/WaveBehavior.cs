@@ -18,10 +18,10 @@ public class WaveBehavior : MonoBehaviour
     void Start()
     {
         numberVertices = 200;
-        timeStep = 0.05f;
+        timeStep = 0.02f;
         time = 0;
-        waveSpeed = 1;
-        clamp = 0.99f;
+        waveSpeed = 50;
+        clamp = 0.9f;
         spawnVertices();
     }
 
@@ -32,6 +32,7 @@ public class WaveBehavior : MonoBehaviour
 
         if(time >= timeStep)
         {
+            print("Time: " + time + "\n");
             updateVertices();
             time -= timeStep;
         }
@@ -41,11 +42,13 @@ public class WaveBehavior : MonoBehaviour
     {
         for (int x = 0; x < numberVertices; x++)
         {
-            yPositions.Add(Random.value * 2 + 10);
+            yPositions.Add((float)(20*x/numberVertices + 10f));
             velocities.Add(0);
             newHeights.Add(0);
-            spheres.Add(GameObject.CreatePrimitive(PrimitiveType.Sphere));
-            spheres[x].transform.position = new Vector3((float)x, yPositions[x], 0);
+            spheres.Add(GameObject.CreatePrimitive(PrimitiveType.Cube));
+            spheres[x].transform.position = new Vector3((float)x, (float)yPositions[x]/2, 0);
+            spheres[x].transform.localScale = new Vector3(1, 2 * spheres[x].transform.position.y, 1);
+            spheres[x].GetComponent<Renderer>().material.color = new Color(0.25f, 0.25f, 1f, 1);
         }
     }
 
@@ -76,23 +79,15 @@ public class WaveBehavior : MonoBehaviour
 
             f = (waveSpeed * waveSpeed) * ((yPositions[leftIndex] + yPositions[rightIndex]) - (2 * yPositions[i]));
             newVelocity = velocities[i] + (f * timeStep);
-            velocities[i] = newVelocity;
+            velocities[i] = clamp*newVelocity;
             newHeights[i] = yPositions[i] + (velocities[i] * timeStep);
-
-            if (i.Equals(1))
-            {
-                print("Velocity : " + newVelocity + "\n");
-                print("Velocity 2: " + velocities[i] + "\n");
-                print("Height : " + yPositions[i] + "\n");
-                print("New Height: " + newHeights[i] + "\n");
-                print("F: " + f + "\n");
-            }
         }
 
         for(int i = 0; i < numberVertices; i++)
         {
             yPositions[i] = newHeights[i];
-            spheres[i].transform.position = new Vector3((float)i, yPositions[i], 0);
+            spheres[i].transform.position = new Vector3((float)i, (float)yPositions[i]/2, 0);
+            spheres[i].transform.localScale = new Vector3(1, 2 * spheres[i].transform.position.y, 1);
         }
     }
 }
