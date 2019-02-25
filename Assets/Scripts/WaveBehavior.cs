@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class WaveBehavior : MonoBehaviour
 {
-    List<GameObject> spheres = new List<GameObject>();
-    List<float> yPositions = new List<float>();
-    List<float> velocities = new List<float>();
-    List<float> newHeights = new List<float>();
+    GameObject[,] columns;
+    float[,] yPositions;
+    float[,] velocities;
+    float[,] newHeights;
     public int numberVertices;
     public float time;
     public float timeStep;
@@ -17,11 +17,15 @@ public class WaveBehavior : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        numberVertices = 200;
+        numberVertices = 100;
+        columns = new GameObject[numberVertices, numberVertices];
+        yPositions = new float[numberVertices, numberVertices];
+        velocities = new float[numberVertices, numberVertices];
+        newHeights = new float[numberVertices, numberVertices];
         timeStep = 0.02f;
         time = 0;
-        waveSpeed = 50;
-        clamp = 0.9f;
+        waveSpeed = 13;
+        clamp = 0.99f;
         spawnVertices();
     }
 
@@ -30,11 +34,11 @@ public class WaveBehavior : MonoBehaviour
     {
         time += Time.deltaTime;
 
-        if(time >= timeStep)
+        if (time >= timeStep)
         {
             print("Time: " + time + "\n");
             updateVertices();
-            time -= timeStep;
+            time = 0;
         }
     }
 
@@ -42,52 +46,78 @@ public class WaveBehavior : MonoBehaviour
     {
         for (int x = 0; x < numberVertices; x++)
         {
-            yPositions.Add((float)(20*x/numberVertices + 10f));
-            velocities.Add(0);
-            newHeights.Add(0);
-            spheres.Add(GameObject.CreatePrimitive(PrimitiveType.Cube));
-            spheres[x].transform.position = new Vector3((float)x, (float)yPositions[x]/2, 0);
-            spheres[x].transform.localScale = new Vector3(1, 2 * spheres[x].transform.position.y, 1);
-            spheres[x].GetComponent<Renderer>().material.color = new Color(0.25f, 0.25f, 1f, 1);
+            for (int y = 0; y < numberVertices; y++) { 
+                yPositions[x, y] = (float)((x+y) / numberVertices + 1f);
+                velocities[x, y] = 0;
+                newHeights[x, y] = 0;
+                columns[x, y] = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                columns[x, y].transform.position = new Vector3((float)x, (float)yPositions[x, y] / 2, y);
+                columns[x, y].transform.localScale = new Vector3(1, 2 * columns[x, y].transform.position.y, 1);
+                columns[x, y].GetComponent<Renderer>().material.color = new Color(0.25f, 0.25f, 1f, 1);
+            }
         }
     }
 
     void updateVertices()
     {
-        int leftIndex;
-        int rightIndex;
+        Vector2Int northIndex;
+        Vector2Int eastIndex;
+        Vector2Int southIndex;
+        Vector2Int westIndex;
         float f;
         float newVelocity;
 
-        for(int i = 0; i < numberVertices; i++)
+        for (int x = 0; x < numberVertices; x++)
         {
-            if(i.Equals(0))
+            for (int y = 0; y < numberVertices; y++)
             {
-                leftIndex = i;
-                rightIndex = i + 1;
-            }
-            else if(i.Equals(numberVertices - 1))
-            {
-                leftIndex = i - 1;
-                rightIndex = i;
-            }
-            else
-            {
-                leftIndex = i - 1;
-                rightIndex = i + 1;
-            }
+                if (x.Equals(0))
+                {
+                    northIndex = new Vector2Int(x, y);
+                    southIndex = new Vector2Int(x + 1, y);
+                }
+                else if (x.Equals(numberVertices - 1))
+                {
+                    northIndex = new Vector2Int(x - 1, y);
+                    southIndex = new Vector2Int(x, y);
+                }
+                else
+                {
+                    northIndex = new Vector2Int(x - 1, y);
+                    southIndex = new Vector2Int(x + 1, y);
+                }
 
-            f = (waveSpeed * waveSpeed) * ((yPositions[leftIndex] + yPositions[rightIndex]) - (2 * yPositions[i]));
-            newVelocity = velocities[i] + (f * timeStep);
-            velocities[i] = clamp*newVelocity;
-            newHeights[i] = yPositions[i] + (velocities[i] * timeStep);
+                if (y.Equals(0))
+                {
+                    eastIndex = new Vector2Int(x, y + 1);
+                    westIndex = new Vector2Int(x, y);
+                }
+                else if (y.Equals(numberVertices - 1))
+                {
+                    eastIndex = new Vector2Int(x, y);
+                    westIndex = new Vector2Int(x, y - 1);
+                }
+                else
+                {
+                    eastIndex = new Vector2Int(x, y + 1);
+                    westIndex = new Vector2Int(x, y - 1);
+                }
+
+                f = (waveSpeed * waveSpeed) * ((yPositions[northIndex.x, northIndex.y] + yPositions[eastIndex.x, eastIndex.y] + yPositions[southIndex.x, southIndex.y] + yPositions[westIndex.x, westIndex.y]) - (4 * yPositions[x, y]));
+                newVelocity = velocities[x, y] + (f * timeStep);
+                velocities[x, y] = clamp * newVelocity;
+                newHeights[x, y] = yPositions[x, y] + (velocities[x, y] * timeStep);
+            }
         }
 
-        for(int i = 0; i < numberVertices; i++)
+        for (int x = 0; x < numberVertices; x++)
         {
-            yPositions[i] = newHeights[i];
-            spheres[i].transform.position = new Vector3((float)i, (float)yPositions[i]/2, 0);
-            spheres[i].transform.localScale = new Vector3(1, 2 * spheres[i].transform.position.y, 1);
+            for (int y = 0; y < numberVertices; y++)
+            {
+                yPositions[x, y] = newHeights[x, y];
+                columns[x, y].transform.position = new Vector3(x, (float)yPositions[x, y] / 2, y);
+                columns[x, y].transform.localScale = new Vector3(1, 2 * columns[x, y].transform.position.y, 1);
+            }
         }
     }
 }
