@@ -2,11 +2,63 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+struct ColumnData
+{
+    private float terrainHeight;
+    private float waterHeight;
+    private float sedimentHeight;
+    private float[] outflowFlux;
+    private Vector2 velocity;
+
+    public ColumnData( float t, float w, float s)
+    {
+        terrainHeight = t;
+        waterHeight = w;
+        sedimentHeight = s;
+        outflowFlux = new float[] { 0, 0, 0, 0 };
+        velocity = new Vector2(0, 0);
+    }
+
+    public ColumnData(float t, float w, float s, float[] o, Vector2 v)
+    {
+        terrainHeight = t;
+        waterHeight = w;
+        sedimentHeight = s;
+        outflowFlux = o;
+        velocity = v;
+    }
+
+    public float getTerrainHeight()
+    {
+        return terrainHeight;
+    }
+
+    public float getWaterHeight()
+    {
+        return waterHeight;
+    }
+
+    public float getSedimentHeight()
+    {
+        return sedimentHeight;
+    }
+
+    public float[] getOutflowFlux()
+    {
+        return outflowFlux;
+    }
+
+    public Vector2 getVelocity()
+    {
+        return velocity;
+    }
+}
+
 public class WaveBehavior : MonoBehaviour
 {
-    GameObject[,] columns;
-    float[,] yPositions;
-    float[,] velocities;
+    GameObject[,] waterColumns;
+    GameObject[,] terrainColumns;
+    ColumnData[,] cData;
     float[,] newHeights;
     public int numberVertices;
     public float time;
@@ -18,15 +70,15 @@ public class WaveBehavior : MonoBehaviour
     void Start()
     {
         numberVertices = 100;
-        columns = new GameObject[numberVertices, numberVertices];
-        yPositions = new float[numberVertices, numberVertices];
-        velocities = new float[numberVertices, numberVertices];
+        terrainColumns = new GameObject[numberVertices, numberVertices];
+        waterColumns = new GameObject[numberVertices, numberVertices];
+        cData = new ColumnData[numberVertices, numberVertices];
         newHeights = new float[numberVertices, numberVertices];
         timeStep = 0.02f;
         time = 0;
         waveSpeed = 13;
         clamp = 0.99f;
-        spawnVertices();
+        spawnColumns();
     }
 
     // Update is called once per frame
@@ -37,28 +89,36 @@ public class WaveBehavior : MonoBehaviour
         if (time >= timeStep)
         {
             print("Time: " + time + "\n");
-            updateVertices();
+            //updateColumnData();
             time = 0;
         }
     }
 
-    void spawnVertices()
+    void spawnColumns()
     {
+        float terrainHeight;
+        float waterHeight;
         for (int x = 0; x < numberVertices; x++)
         {
-            for (int y = 0; y < numberVertices; y++) { 
-                yPositions[x, y] = (float)((x+y) / numberVertices + 1f);
-                velocities[x, y] = 0;
+            for (int y = 0; y < numberVertices; y++)
+            {
+                cData[x, y] = new ColumnData(1, 2, 0);
+                terrainHeight = cData[x, y].getTerrainHeight();
+                waterHeight = cData[x, y].getWaterHeight();
+        
                 newHeights[x, y] = 0;
-                columns[x, y] = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                columns[x, y].transform.position = new Vector3((float)x, (float)yPositions[x, y] / 2, y);
-                columns[x, y].transform.localScale = new Vector3(1, 2 * columns[x, y].transform.position.y, 1);
-                columns[x, y].GetComponent<Renderer>().material.color = new Color(0.25f, 0.25f, 1f, 1);
+                terrainColumns[x,y] = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                terrainColumns[x, y].transform.position = new Vector3(x, (float)(terrainHeight / 2), y);
+                terrainColumns[x, y].transform.localScale = new Vector3(1, terrainHeight, 1);
+                waterColumns[x, y] = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                waterColumns[x, y].transform.position = new Vector3(x, (float)((waterHeight / 2) + terrainHeight), y);
+                waterColumns[x, y].transform.localScale = new Vector3(1, waterHeight, 1);
+                waterColumns[x, y].GetComponent<Renderer>().material.color = new Color(0.25f, 0.25f, 1f, 1);
             }
         }
     }
 
-    void updateVertices()
+    void updateColumnData()
     {
         Vector2Int northIndex;
         Vector2Int eastIndex;
@@ -71,52 +131,7 @@ public class WaveBehavior : MonoBehaviour
         {
             for (int y = 0; y < numberVertices; y++)
             {
-                if (x.Equals(0))
-                {
-                    northIndex = new Vector2Int(x, y);
-                    southIndex = new Vector2Int(x + 1, y);
-                }
-                else if (x.Equals(numberVertices - 1))
-                {
-                    northIndex = new Vector2Int(x - 1, y);
-                    southIndex = new Vector2Int(x, y);
-                }
-                else
-                {
-                    northIndex = new Vector2Int(x - 1, y);
-                    southIndex = new Vector2Int(x + 1, y);
-                }
 
-                if (y.Equals(0))
-                {
-                    eastIndex = new Vector2Int(x, y + 1);
-                    westIndex = new Vector2Int(x, y);
-                }
-                else if (y.Equals(numberVertices - 1))
-                {
-                    eastIndex = new Vector2Int(x, y);
-                    westIndex = new Vector2Int(x, y - 1);
-                }
-                else
-                {
-                    eastIndex = new Vector2Int(x, y + 1);
-                    westIndex = new Vector2Int(x, y - 1);
-                }
-
-                f = (waveSpeed * waveSpeed) * ((yPositions[northIndex.x, northIndex.y] + yPositions[eastIndex.x, eastIndex.y] + yPositions[southIndex.x, southIndex.y] + yPositions[westIndex.x, westIndex.y]) - (4 * yPositions[x, y]));
-                newVelocity = velocities[x, y] + (f * timeStep);
-                velocities[x, y] = clamp * newVelocity;
-                newHeights[x, y] = yPositions[x, y] + (velocities[x, y] * timeStep);
-            }
-        }
-
-        for (int x = 0; x < numberVertices; x++)
-        {
-            for (int y = 0; y < numberVertices; y++)
-            {
-                yPositions[x, y] = newHeights[x, y];
-                columns[x, y].transform.position = new Vector3(x, (float)yPositions[x, y] / 2, y);
-                columns[x, y].transform.localScale = new Vector3(1, 2 * columns[x, y].transform.position.y, 1);
             }
         }
     }
