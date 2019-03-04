@@ -2,16 +2,54 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+struct Flux
+{
+    private float left;
+    private float right;
+    private float top;
+    private float bottom;
+
+    public Flux(float l, float r, float t, float b)
+    {
+        left = l;
+        right = r;
+        top = t;
+        bottom = b;
+    }
+
+    public float getLeft()
+    {
+        return left;
+    }
+
+    public float getRight()
+    {
+        return right;
+    }
+
+    public float getTop()
+    {
+        return top;
+    }
+
+    public float getBottom()
+    {
+        return bottom;
+    }
+}
+
 public class WaveBehavior : MonoBehaviour
 {
     private GameObject[,] waterColumns;
     private GameObject[,] terrainColumns;
     private float[,] waterHeight;
     private float[,] terrainHeight;
-    private Vector4[,] outflowFlux;
+    private Flux[,] outflowFlux;
     private Vector2[,] velocity;
     private float[,] newWaterHeight;
 
+    float A;
+    float g;
     public int numberVertices;
     public float gridLength;
     public float gridWidth;
@@ -27,11 +65,13 @@ public class WaveBehavior : MonoBehaviour
         numberVertices = 20;
         gridLength = 0.5f;
         gridWidth = 0.5f;
+        A = 0.25f;
+        g = 1f;
         terrainColumns = new GameObject[numberVertices, numberVertices];
         waterColumns = new GameObject[numberVertices, numberVertices];
         waterHeight = new float[numberVertices, numberVertices];
         terrainHeight = new float[numberVertices, numberVertices];
-        outflowFlux = new Vector4[numberVertices, numberVertices];
+        outflowFlux = new Flux[numberVertices, numberVertices];
         velocity = new Vector2[numberVertices, numberVertices];
         newWaterHeight = new float[numberVertices, numberVertices];
         timeStep = 0.02f;
@@ -51,7 +91,7 @@ public class WaveBehavior : MonoBehaviour
             print("Time: " + time + "\n");
             updateColumnData();
             time = 0;
-            count++;
+            //count++;
         }
     }
 
@@ -67,7 +107,7 @@ public class WaveBehavior : MonoBehaviour
                 waterHeight[x, y] = 2;
 
                 // flux = (Left, Right, Top, Bottom)
-                outflowFlux[x, y] = new Vector4(0, 0, 0, 0);
+                outflowFlux[x, y] = new Flux(0, 0, 0, 0);
                 velocity[x, y] = new Vector2(0, 0);
                 tempTerrainHeight = terrainHeight[x, y];
                 tempWaterHeight = waterHeight[x, y];
@@ -90,9 +130,6 @@ public class WaveBehavior : MonoBehaviour
         float fluxRight;
         float fluxTop;
         float fluxBottom;
-        float A = 0.25f;
-        float g = 1f;
-        float l = gridLength;
         float K;
         float volumeChange;
 
@@ -107,7 +144,7 @@ public class WaveBehavior : MonoBehaviour
                 }
                 else
                 {
-                    fluxLeft = Mathf.Max(0, outflowFlux[x, y].x + time * A * (g * heightDifference(x, y, "Left") / l));
+                    fluxLeft = computeFlux(x, y, "Left");
                 }
 
                 print("FluxLeft: " + fluxLeft);
@@ -118,7 +155,7 @@ public class WaveBehavior : MonoBehaviour
                 }
                 else
                 {
-                    fluxRight = Mathf.Max(0, outflowFlux[x, y].x + time * A * (g * heightDifference(x, y, "Right") / l));
+                    fluxRight = computeFlux(x, y, "Right");
                 }
 
                 print("FluxRight: " + fluxRight);
@@ -129,7 +166,7 @@ public class WaveBehavior : MonoBehaviour
                 }
                 else
                 {
-                    fluxTop = Mathf.Max(0, outflowFlux[x, y].x + time * A * (g * heightDifference(x, y, "Top") / l));
+                    fluxTop = computeFlux(x, y, "Top");
                 }
 
                 print("FluxTop: " + fluxTop);
@@ -140,7 +177,7 @@ public class WaveBehavior : MonoBehaviour
                 }
                 else
                 {
-                    fluxBottom = Mathf.Max(0, outflowFlux[x, y].x + time * A * (g * heightDifference(x, y, "Bottom") / l));
+                    fluxBottom = computeFlux(x, y, "Bottom");
                 }
 
                 print("FluxBottom: " + fluxBottom);
@@ -156,7 +193,7 @@ public class WaveBehavior : MonoBehaviour
 
                 print("Top: " + fluxTop);
 
-                outflowFlux[x, y].Set(fluxLeft, fluxRight, fluxTop, fluxBottom);
+                outflowFlux[x, y] = new Flux(fluxLeft, fluxRight, fluxTop, fluxBottom);
                 print("Flux: " + outflowFlux[x, y]);
             }
         }
@@ -201,7 +238,7 @@ public class WaveBehavior : MonoBehaviour
                     fluxBottom = inflowFlux(x, y, "Bottom");
                 }
 
-                volumeChange = time * ((fluxLeft + fluxRight + fluxTop + fluxBottom) - (outflowFlux[x, y].x + outflowFlux[x, y].y + outflowFlux[x, y].z + outflowFlux[x, y].w));
+                volumeChange = time * ((fluxLeft + fluxRight + fluxTop + fluxBottom) - (outflowFlux[x, y].getLeft() + outflowFlux[x, y].getRight() + outflowFlux[x, y].getTop() + outflowFlux[x, y].getBottom()));
                 //print("------------  " + x + ", " + y + "  -------------");
                 //print("Volume change: " + volumeChange);
                 //print("1: " + waterHeight[x, y]);
@@ -211,6 +248,33 @@ public class WaveBehavior : MonoBehaviour
                 waterColumns[x, y].transform.localScale = new Vector3(gridWidth, waterHeight[x, y], gridLength);
             }
         }
+    }
+
+    float computeFlux(int x, int y, string s)
+    {
+        float flux;
+
+        switch (s)
+        {
+            case "Left":
+                flux = Mathf.Max(0, outflowFlux[x, y].getLeft() + time * A * (g * heightDifference(x, y, s) / gridLength));
+                break;
+            case "Right":
+                flux = Mathf.Max(0, outflowFlux[x, y].getRight() + time * A * (g * heightDifference(x, y, s) / gridLength));
+                break;
+            case "Top":
+                flux = Mathf.Max(0, outflowFlux[x, y].getTop() + time * A * (g * heightDifference(x, y, s) / gridLength));
+                break;
+            case "Bottom":
+                flux = Mathf.Max(0, outflowFlux[x, y].getBottom() + time * A * (g * heightDifference(x, y, s) / gridLength));
+                break;
+            default:
+                print("Error: String " + s + " in computeFlux() not recognized");
+                flux = 0;
+                break;
+        }
+
+        return flux;
     }
 
     float heightDifference(int x, int y, int a, int b)
@@ -253,16 +317,16 @@ public class WaveBehavior : MonoBehaviour
         switch (s)
         {
             case "Left":
-                inflow = outflowFlux[x, y - 1].y;
+                inflow = outflowFlux[x, y - 1].getRight();
                 break;
             case "Right":
-                inflow = outflowFlux[x, y + 1].x;
+                inflow = outflowFlux[x, y + 1].getLeft();
                 break;
             case "Top":
-                inflow = outflowFlux[x - 1, y].w;
+                inflow = outflowFlux[x - 1, y].getBottom();
                 break;
             case "Bottom":
-                inflow = outflowFlux[x + 1, y].z;
+                inflow = outflowFlux[x + 1, y].getTop();
                 break;
             default:
                 print("Error: String " + s + " in inflowFlux() not recognized");
