@@ -88,7 +88,7 @@ public class WaveBehavior : MonoBehaviour
 
         if (time >= timeStep && count < 1)
         {
-            print("Time: " + time + "\n");
+            // print("Time: " + time + "\n");
             updateColumnData();
             time = 0;
             //count++;
@@ -119,7 +119,7 @@ public class WaveBehavior : MonoBehaviour
                 waterColumns[x, y] = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 waterColumns[x, y].transform.position = new Vector3(x * gridWidth, (float)((tempWaterHeight / 2) + tempTerrainHeight), y * gridLength);
                 waterColumns[x, y].transform.localScale = new Vector3(gridWidth, tempWaterHeight, gridLength);
-                waterColumns[x, y].GetComponent<Renderer>().material.color = new Color(0.25f, 0.25f, 1f, 1);
+                waterColumns[x, y].GetComponent<Renderer>().material.color = new Color(0, 1, 1, 1);
             }
         }
     }
@@ -137,7 +137,7 @@ public class WaveBehavior : MonoBehaviour
         {
             for (int y = 0; y < numberVertices; y++)
             {
-                print("========= " + x + ", " + y + " =========");
+                // print("========= " + x + ", " + y + " =========");
                 if (y.Equals(0))
                 {
                     fluxLeft = 0;
@@ -147,7 +147,7 @@ public class WaveBehavior : MonoBehaviour
                     fluxLeft = computeFlux(x, y, "Left");
                 }
 
-                print("FluxLeft: " + fluxLeft);
+                // print("FluxLeft: " + fluxLeft);
 
                 if (y.Equals(numberVertices - 1))
                 {
@@ -158,7 +158,7 @@ public class WaveBehavior : MonoBehaviour
                     fluxRight = computeFlux(x, y, "Right");
                 }
 
-                print("FluxRight: " + fluxRight);
+                // print("FluxRight: " + fluxRight);
 
                 if (x.Equals(0))
                 {
@@ -169,7 +169,7 @@ public class WaveBehavior : MonoBehaviour
                     fluxTop = computeFlux(x, y, "Top");
                 }
 
-                print("FluxTop: " + fluxTop);
+                // print("FluxTop: " + fluxTop);
 
                 if (x.Equals(numberVertices - 1))
                 {
@@ -180,21 +180,21 @@ public class WaveBehavior : MonoBehaviour
                     fluxBottom = computeFlux(x, y, "Bottom");
                 }
 
-                print("FluxBottom: " + fluxBottom);
+                // print("FluxBottom: " + fluxBottom);
 
                 K = Mathf.Min(1, waterHeight[x, y] * gridLength * gridWidth / ((fluxLeft + fluxRight + fluxTop + fluxBottom) * time));
 
-                print("K: " + K);
+                // print("K: " + K);
 
                 fluxLeft = K * fluxLeft;
                 fluxRight = K * fluxRight;
                 fluxTop = K * fluxTop;
                 fluxBottom = K * fluxBottom;
 
-                print("Top: " + fluxTop);
+                // print("Top: " + fluxTop);
 
                 outflowFlux[x, y] = new Flux(fluxLeft, fluxRight, fluxTop, fluxBottom);
-                print("Flux: " + outflowFlux[x, y]);
+                // print("Flux: " + outflowFlux[x, y]);
             }
         }
 
@@ -242,7 +242,7 @@ public class WaveBehavior : MonoBehaviour
                 //print("------------  " + x + ", " + y + "  -------------");
                 //print("Volume change: " + volumeChange);
                 //print("1: " + waterHeight[x, y]);
-                waterHeight[x, y] = waterHeight[x, y] + (volumeChange / (gridLength * gridWidth));
+                waterHeight[x, y] = Mathf.Max(0.01f, waterHeight[x, y] + (volumeChange / (gridLength * gridWidth)));
                 //print("2: " + waterHeight[x, y]);
                 waterColumns[x, y].transform.position = new Vector3(x * gridWidth, (float)((waterHeight[x, y] / 2) + terrainHeight[x, y]), y * gridLength);
                 waterColumns[x, y].transform.localScale = new Vector3(gridWidth, waterHeight[x, y], gridLength);
