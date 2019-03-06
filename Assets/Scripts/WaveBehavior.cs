@@ -62,7 +62,7 @@ public class WaveBehavior : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        numberVertices = 20;
+        numberVertices = 40;
         gridLength = 0.5f;
         gridWidth = 0.5f;
         A = 0.25f;
@@ -99,14 +99,14 @@ public class WaveBehavior : MonoBehaviour
     {
         float tempTerrainHeight;
         float tempWaterHeight;
+
         for (int x = 0; x < numberVertices; x++)
         {
             for (int y = 0; y < numberVertices; y++)
             {
-                terrainHeight[x, y] = 3 * (float)x / numberVertices + 1;
+                terrainHeight[x, y] = 3 * (float)(x + y) / numberVertices + 1;
                 waterHeight[x, y] = 2;
-
-                // flux = (Left, Right, Top, Bottom)
+                
                 outflowFlux[x, y] = new Flux(0, 0, 0, 0);
                 velocity[x, y] = new Vector2(0, 0);
                 tempTerrainHeight = terrainHeight[x, y];
@@ -132,6 +132,7 @@ public class WaveBehavior : MonoBehaviour
         float fluxBottom;
         float K;
         float volumeChange;
+        Flux[,] tempFlux = new Flux[numberVertices, numberVertices];
 
         for (int x = 0; x < numberVertices; x++)
         {
@@ -199,8 +200,16 @@ public class WaveBehavior : MonoBehaviour
 
                 // print("Top: " + fluxTop);
 
-                outflowFlux[x, y] = new Flux(fluxLeft, fluxRight, fluxTop, fluxBottom);
+                tempFlux[x, y] = new Flux(fluxLeft, fluxRight, fluxTop, fluxBottom);
                 // print("Flux: " + outflowFlux[x, y]);
+            }
+        }
+
+        for (int x = 0; x < numberVertices; x++)
+        {
+            for (int y = 0; y < numberVertices; y++)
+            {
+                outflowFlux[x, y] = tempFlux[x, y];
             }
         }
 
@@ -255,7 +264,7 @@ public class WaveBehavior : MonoBehaviour
                 waterHeight[x, y] = waterHeight[x, y] + (volumeChange / (gridLength * gridWidth));
                 //print("2: " + waterHeight[x, y]);
                 waterColumns[x, y].transform.position = new Vector3(x * gridWidth, (float)((waterHeight[x, y] / 2) + terrainHeight[x, y]), y * gridLength);
-                waterColumns[x, y].transform.localScale = new Vector3(gridWidth, waterHeight[x, y], gridLength);
+                waterColumns[x, y].transform.localScale = new Vector3(gridWidth, Mathf.Max(0, waterHeight[x, y]), gridLength);
                 if (waterHeight[x, y].Equals(0))
                 {
                     waterColumns[x, y].GetComponent<Renderer>().material.color = new Color(0, 1, 1, 0);
