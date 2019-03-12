@@ -49,6 +49,10 @@ public class WaveBehavior : MonoBehaviour
     private Flux[,] outflowFlux;
     private Vector2[,] velocity;
     private float[,] newWaterHeight;
+    private Texture2D columnData;
+    private Texture2D fluxData;
+    private Texture2D velocityData;
+    private Renderer r;
 
     float A;
     float g;
@@ -71,6 +75,9 @@ public class WaveBehavior : MonoBehaviour
         gridWidth = 0.1f;
         A = 0.01f;
         g = 1f;
+        columnData = new Texture2D(numberVertices, numberVertices);
+        fluxData = new Texture2D(numberVertices, numberVertices);
+        velocityData = new Texture2D(numberVertices, numberVertices);
         terrainColumns = new GameObject[numberVertices, numberVertices];
         waterColumns = new GameObject[numberVertices, numberVertices];
         sedimentColumns = new GameObject[numberVertices, numberVertices];
@@ -110,8 +117,19 @@ public class WaveBehavior : MonoBehaviour
                 waterHeight[x, y] = 1;
                 sedimentHeight[x, y] = 0.5f;
 
+                // r = terrain height, g = water height, b = sediment height
+                columnData.SetPixel(x, y, new Color(3 * (float)((x + y) % numberVertices) / numberVertices + 1, 1, 0.5f, 1));
+
                 outflowFlux[x, y] = new Flux(0, 0, 0, 0);
+
+                // r = flux left, g = flux right, b = flux top, a = flux bottom
+                fluxData.SetPixel(x, y, new Color(0, 0, 0, 0));
+
                 velocity[x, y] = new Vector2(0, 0);
+
+                // r = velocity in x direction, g = velocity in y direction
+                velocityData.SetPixel(x, y, new Color(0, 0, 1, 1));
+
                 newWaterHeight[x, y] = 0;
 
                 spawnTerrain(x, y);
@@ -405,7 +423,7 @@ public class WaveBehavior : MonoBehaviour
     void spawnWater(int x, int y)
     {
         waterColumns[x, y] = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        waterColumns[x, y].GetComponent<Renderer>().material.color = new Color(0, 1, 1, 1);
+        waterColumns[x, y].GetComponent<Renderer>().material.color = columnData.GetPixel(x, y);
     }
 
     void spawnTerrain(int x, int y)
@@ -414,7 +432,7 @@ public class WaveBehavior : MonoBehaviour
         terrainColumns[x, y] = GameObject.CreatePrimitive(PrimitiveType.Cube);
         terrainColumns[x, y].transform.position = new Vector3(x * gridWidth, (float)(height / 2), y * gridLength);
         terrainColumns[x, y].transform.localScale = new Vector3(gridWidth, height, gridLength);
-        terrainColumns[x, y].GetComponent<Renderer>().material.color = Color.grey;
+        terrainColumns[x, y].GetComponent<Renderer>().material.color = fluxData.GetPixel(x, y);
     }
 
     void spawnSediment(int x, int y)
@@ -423,6 +441,7 @@ public class WaveBehavior : MonoBehaviour
         sedimentColumns[x, y] = GameObject.CreatePrimitive(PrimitiveType.Cube);
         sedimentColumns[x, y].transform.position = new Vector3(x * gridWidth, (float)(height / 2) + terrainHeight[x, y], y * gridLength);
         sedimentColumns[x, y].transform.localScale = new Vector3(gridWidth, height, gridLength);
-        sedimentColumns[x, y].GetComponent<Renderer>().material.color = new Color(0.8f, 0.7f, 0.5f, 1);
+        sedimentColumns[x, y].GetComponent<Renderer>().material.color = velocityData.GetPixel(x, y);
+            //new Color(0.8f, 0.7f, 0.5f, 1);
     }
 }
