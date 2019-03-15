@@ -17,7 +17,7 @@ public class GPUWaveBehavior : MonoBehaviour
     void Start()
     {
         waterRenderer = GetComponent<Renderer>();
-        numberVertices = 256;
+        numberVertices = 512;
         gridLength = gridWidth = 1;
         columnData = new Texture2D(numberVertices, numberVertices);
         fluxData = new Texture2D(numberVertices, numberVertices);
@@ -42,13 +42,13 @@ public class GPUWaveBehavior : MonoBehaviour
                 columnData.SetPixel(x, y, new Color(3 * (float)((x + y) % numberVertices) / numberVertices + 1, 1, 0.5f, 1));
 
                 // r = flux left, g = flux right, b = flux top, a = flux bottom
-                fluxData.SetPixel(x, y, new Color(0, 0, 0, 0));
+                fluxData.SetPixel(x, y, new Color(0, 0, 0, 1));
 
                 // r = velocity in x direction, g = velocity in y direction
                 velocityData.SetPixel(x, y, new Color(0, 0, 1, 1));
             }
         }
-
+        
         waterRenderer.material.SetTexture("_CDTex", columnData);
         waterRenderer.material.SetTexture("_FTex", fluxData);
         waterRenderer.material.SetTexture("_VTex", velocityData);

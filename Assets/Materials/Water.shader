@@ -8,7 +8,7 @@
     }
     SubShader
     {
-        Tags { "Queue" = "Opaque" }
+        Tags { "RenderType" = "Opaque" }
         LOD 100
 
 		ZWrite Off
@@ -25,6 +25,7 @@
             struct appdata
             {
                 float4 vertex : POSITION;
+				float4 color : COLOR;
                 float2 uv : TEXCOORD0;
             };
 
@@ -32,6 +33,7 @@
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
+				float4 color : COLOR;
             };
 
             sampler2D _CDTex;
@@ -42,6 +44,7 @@
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = TRANSFORM_TEX(v.uv, _CDTex);
+				o.color = v.color;
                 return o;
             }
 
