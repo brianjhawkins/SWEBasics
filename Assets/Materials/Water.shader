@@ -25,7 +25,6 @@
             struct appdata
             {
                 float4 vertex : POSITION;
-				float4 color : COLOR;
                 float2 uv : TEXCOORD0;
             };
 
@@ -33,7 +32,6 @@
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
-				float4 color : COLOR;
             };
 
             sampler2D _CDTex;
@@ -42,9 +40,28 @@
             v2f vert (appdata v)
             {
                 v2f o;
+				float x = v.uv.x;
+				float y = v.uv.y;
+				float4 tex = tex2Dlod(_CDTex, float4(x, y, 0, 0));
+				float4 left = tex2Dlod(_CDTex, float4(x - 1, y, 0, 0));
+				float4 right = tex2Dlod(_CDTex, float4(x + 1, y, 0, 0));
+				float4 top = tex2Dlod(_CDTex, float4(x, y - 1, 0, 0));
+				float4 bottom = tex2Dlod(_CDTex, float4(x, y + 1, 0, 0));
+				float texHeight = tex.r + tex.g;
+				float leftHeight = left.r + left.g;
+				float rightHeight = right.r + right.g;
+				float topHeight = top.r + top.g;
+				float bottomHeight = bottom.r + bottom.g;
+
+				texHeight = lerp(texHeight, leftHeight, 0);
+				texHeight = lerp(texHeight, rightHeight, 0);
+				texHeight = lerp(texHeight, topHeight, 0);
+				texHeight = lerp(texHeight, bottomHeight, 0);
+
+
+				v.vertex.y += (texHeight);
                 o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = TRANSFORM_TEX(v.uv, _CDTex);
-				o.color = v.color;
                 return o;
             }
 
